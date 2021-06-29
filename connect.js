@@ -38,38 +38,45 @@ addDepartment = () => {
 addRole = () => {
     connection.query("SELECT * FROM department", (err, res) => {
         const choices = res.map(result => result.department_name);
-        inquirer.prompt([
-            {
-                name: "title",
-                message: "What is the title of the role?",
-                type: "input"
-            },
-            {
-                name: "salary",
-                message: "What is the salary of the role?",
-                type: "number"
-            },
-            {
-                name: "department_name",
-                message: "What department does this role fall into?",
-                type: "list",
-                choices
-            }
-        ]).then(answers => {
-            const { title, salary, department_name } = answers;
-            connection.query("SELECT id FROM department WHERE department_name = ?", [department_name], (err, res) => {
-                const department_id = res[0].id;
-                connection.query("INSERT INTO employee_role SET ?", [{
-                    title,
-                    salary,
-                    department_id
-                }], err => {
-                    if (err) throw err;
-                    console.log("Role added successfully!");
-                    init();
+        if (choices.length > 0) {
+            inquirer.prompt([
+                {
+                    name: "title",
+                    message: "What is the title of the role?",
+                    type: "input"
+                },
+                {
+                    name: "salary",
+                    message: "What is the salary of the role?",
+                    type: "number"
+                },
+                {
+                    name: "department_name",
+                    message: "What department does this role fall into?",
+                    type: "list",
+                    choices
+                }
+            ]).then(answers => {
+                const { title, salary, department_name } = answers;
+                connection.query("SELECT id FROM department WHERE department_name = ?", [department_name], (err, res) => {
+                    const department_id = res[0].id;
+                    connection.query("INSERT INTO employee_role SET ?", [{
+                        title,
+                        salary,
+                        department_id
+                    }], err => {
+                        if (err) throw err;
+                        console.log("Role added successfully!");
+                        init();
+                    })
                 })
             })
-        })
+        } else {
+            console.log("-----------------------------------");
+            console.log("| No departments in the database! |");
+            console.log("-----------------------------------");
+            init();
+        }
     })
 }
 
@@ -79,55 +86,62 @@ addEmployee = () => {
         manChoices.push("None")
         connection.query("SELECT * FROM employee_role", (err, res) => {
             const roleChoices = res.map(result => result.title);
-            inquirer.prompt([
-                {
-                    name: "first_name",
-                    message: "What is their first name?",
-                    type: "input"
-                },
-                {
-                    name: "last_name",
-                    message: "What is their last name?",
-                    type: "input"
-                },
-                {
-                    name: "title",
-                    message: "What is the title of the role?",
-                    type: "list",
-                    choices: roleChoices
-                },
-                {
-                    name: "manager_name",
-                    message: "Who is their manager?",
-                    type: "list",
-                    choices: manChoices
-                }
-            ]).then(answers => {
-                const {first_name, last_name, title, manager_name} = answers;
-                let managerName = manager_name.split(" ");
-                connection.query("SELECT id FROM employee WHERE first_name = ? AND last_name = ?", [managerName[0], managerName[1]], (err, res) => {
-                    let manager_id;
-                    console.log(res)
-                    if (res[0] === undefined) {
-                        manager_id = null;
-                    } else {
-                        manager_id = res[0].id;
+            if (roleChoices.length > 0) {
+                inquirer.prompt([
+                    {
+                        name: "first_name",
+                        message: "What is their first name?",
+                        type: "input"
+                    },
+                    {
+                        name: "last_name",
+                        message: "What is their last name?",
+                        type: "input"
+                    },
+                    {
+                        name: "title",
+                        message: "What is the title of the role?",
+                        type: "list",
+                        choices: roleChoices
+                    },
+                    {
+                        name: "manager_name",
+                        message: "Who is their manager?",
+                        type: "list",
+                        choices: manChoices
                     }
-                    connection.query("SELECT id FROM employee_role WHERE title = ?", [title], (err, res) => {
-                        const role_id = res[0].id;
-                        connection.query("INSERT INTO employee SET ?", [{
-                            first_name,
-                            last_name,
-                            role_id,
-                            manager_id
-                        }], (err) => {
-                            if (err) throw err;
-                            console.log("Employee added successfully!");
-                            init();
+                ]).then(answers => {
+                    const {first_name, last_name, title, manager_name} = answers;
+                    let managerName = manager_name.split(" ");
+                    connection.query("SELECT id FROM employee WHERE first_name = ? AND last_name = ?", [managerName[0], managerName[1]], (err, res) => {
+                        let manager_id;
+                        console.log(res)
+                        if (res.length <= 0) {
+                            manager_id = null;
+                        } else {
+                            manager_id = res[0].id;
+                        }
+                        connection.query("SELECT id FROM employee_role WHERE title = ?", [title], (err, res) => {
+                            const role_id = res[0].id;
+                            connection.query("INSERT INTO employee SET ?", [{
+                                first_name,
+                                last_name,
+                                role_id,
+                                manager_id
+                            }], (err) => {
+                                if (err) throw err;
+                                console.log("Employee added successfully!");
+                                init();
+                            })
                         })
                     })
                 })
-            })
+            } else {
+                console.log("---------------------------------");
+                console.log("|   No roles in the database!   |");
+                console.log("---------------------------------");
+                init();
+            }
         })
     })
 }
@@ -135,7 +149,7 @@ addEmployee = () => {
 viewDepartments = () => {
     connection.query("SELECT * FROM department", (err, res) => {
         let display = [];
-        if (res[0] === undefined) {
+        if (res <= 0) {
             console.log("-----------------------------------");
             console.log("| No departments in the database! |");
             console.log("-----------------------------------");
@@ -159,7 +173,7 @@ viewDepartments = () => {
 viewRoles = () => {
     connection.query("SELECT * FROM employee_role", (err, resp) => {
         let display = [];
-        if (resp[0] === undefined) {
+        if (resp.length <= 0) {
             console.log("---------------------------------");
             console.log("|   No roles in the database!   |");
             console.log("---------------------------------");
@@ -187,7 +201,7 @@ viewRoles = () => {
 viewEmployees = () => {
     connection.query("SELECT * FROM employee", (err, resp) => {
         let display = [];
-        if (resp[0] === undefined) {
+        if (resp.length <= 0) {
             console.log("---------------------------------");
             console.log("| No employees in the database! |");
             console.log("---------------------------------");
