@@ -145,6 +145,23 @@ viewDepartments = () => {
     })
 }
 
+viewRoles = () => {
+    connection.query("SELECT * FROM employee_role", (err, res) => {
+        let display = [];
+        for (i in res) {
+            let object = {
+                Id: res[i].id,
+                Title: res[i].title,
+                Salary: res[i].salary,
+                "Department Id": res[i].department_id
+            }
+            display.push(object);
+        }
+        console.table(display);
+        init();
+    })
+}
+
 init = () => {
     inquirer.prompt([
         {
