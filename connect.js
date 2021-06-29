@@ -104,9 +104,10 @@ addEmployee = () => {
                 }
             ]).then(answers => {
                 const {first_name, last_name, title, manager_name} = answers;
-                connection.query("SELECT id FROM role WHERE SELECT id FROM employee WHERE first_name + last_name = ?", [manager_name], (err, res) => {
-                    let manager_id
-                    if (manager_name === "None") {
+                let managerName = manager_name.split(" ");
+                connection.query("SELECT id FROM employee WHERE first_name = ? AND last_name = ?", [managerName[0], managerName[1]], (err, res) => {
+                    let manager_id;
+                    if (managerName === "None") {
                         manager_id = null;
                     } else {
                         manager_id = res[0].id;
@@ -152,13 +153,73 @@ viewRoles = () => {
             let object = {
                 Id: res[i].id,
                 Title: res[i].title,
-                Salary: res[i].salary,
-                "Department Id": res[i].department_id
+                Salary: res[i].salary
             }
-            display.push(object);
+            connection.query("SELECT * FROM department WHERE id = ?", [res[i].department_id], (err, res) => {
+                object["Department Id"] = res[0].department_id
+                display.push(object);
+                console.table(display);
+            init();
+            })
         }
-        console.table(display);
-        init();
+    })
+}
+
+viewEmployees = () => {
+    connection.query("SELECT * FROM employee", (err, res) => {
+        let display = [];
+        for (i in res) {
+            let first_name = res[i].first_name
+            let last_name = res[i].last_name
+            let title;
+            let department;
+            let salary
+            let manager_name;
+            let hasManager = res[i].manager_id;
+            connection.query("SELECT * FROM employee_role WHERE id = ?", [res[i].role_id], (err, res) => {
+                if (err) throw err;
+                title = res[0].title;
+                salary = res[0].salary;
+                connection.query("SELECT * FROM department WHERE id = ?", [res[0].department_id], (err, res) => {
+                    if (err) throw err;
+                    department = res[0].department_name
+                    if (hasManager === null) {
+                        manager_name = "None";
+                        let object = {
+                            Id: res[i].id,
+                            "First Name": first_name,
+                            "Last Name": last_name,
+                            Title: title,
+                            Department: department,
+                            Salary: salary,
+                            Manager: manager_name
+                        }
+                        display.push(object);
+                        console.log(display)
+                        console.table(display);
+                        init();
+                    } else {
+                        connection.query("SELECT * FROM employee WHERE id = ?", [hasManager], (err, res) => {
+                            if (err) throw err;
+                            console.log(res);
+                            manager_name = res[0].first_name + " " + res[0].last_name
+                            let object = {
+                                Id: res[i].id,
+                                "First Name": res[i].first_name,
+                                "Last Name": res[i].last_name,
+                                Title: title,
+                                Department: department,
+                                Salary: salary,
+                                Manager: manager_name
+                            }
+                            display.push(object);
+                            console.table(display);
+                            init();
+                        })
+                    }
+                })
+            })
+        }
     })
 }
 
