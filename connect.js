@@ -1,7 +1,7 @@
 const mysql = require('mysql');
 const inquirer = require('inquirer');
 const dotenv = require('dotenv');
-const { inherits } = require('util');
+const cTable = require('console.table');
 dotenv.config();
 
 const connection = mysql.createConnection({
@@ -26,7 +26,7 @@ addDepartment = () => {
             type: "input"
         }
     ]).then(answers => {
-        const {department_name} = answers;
+        const { department_name } = answers;
         connection.query("INSERT INTO department (department_name) VALUES (?)", [department_name], (err) => {
             if (err) throw err;
             console.log('Department added successfully');
@@ -56,7 +56,7 @@ addRole = () => {
                 choices
             }
         ]).then(answers => {
-            const {title, salary, department_name} = answers;
+            const { title, salary, department_name } = answers;
             connection.query("SELECT id FROM department WHERE department_name = ?", [department_name], (err, res) => {
                 const department_id = res[0].id;
                 connection.query("INSERT INTO employee_role SET ?", [{
@@ -73,6 +73,63 @@ addRole = () => {
     })
 }
 
+addEmployee = () => {
+    connection.query("SELECT * FROM employee", (err, res) => {
+        const manChoices = res.map(result => result.first_name + " " + result.last_name);
+        manChoices.push("None")
+        connection.query("SELECT * FROM employee_role", (err, res) => {
+            const roleChoices = res.map(result => result.title);
+            inquirer.prompt([
+                {
+                    name: "first_name",
+                    message: "What is their first name?",
+                    type: "input"
+                },
+                {
+                    name: "last_name",
+                    message: "What is their last name?",
+                    type: "input"
+                },
+                {
+                    name: "title",
+                    message: "What is the title of the role?",
+                    type: "list",
+                    choices: roleChoices
+                },
+                {
+                    name: "manager_name",
+                    message: "Who is their manager?",
+                    type: "list",
+                    choices: manChoices
+                }
+            ]).then(answers => {
+                const {first_name, last_name, title, manager_name} = answers;
+                connection.query("SELECT id FROM role WHERE SELECT id FROM employee WHERE first_name + last_name = ?", [manager_name], (err, res) => {
+                    let manager_id
+                    if (manager_name === "None") {
+                        manager_id = null;
+                    } else {
+                        manager_id = res[0].id;
+                    }
+                    connection.query("SELECT id FROM employee_role WHERE title = ?", [title], (err, res) => {
+                        const role_id = res[0].id;
+                        connection.query("INSERT INTO employee SET ?", [{
+                            first_name,
+                            last_name,
+                            role_id,
+                            manager_id
+                        }], (err) => {
+                            if (err) throw err;
+                            console.log("Employee added successfully!");
+                            init();
+                        })
+                    })
+                })
+            })
+        })
+    })
+}
+
 init = () => {
     inquirer.prompt([
         {
@@ -81,7 +138,7 @@ init = () => {
             type: "list",
             choices: [
                 "Add department",
-                "Add role", 
+                "Add role",
                 "Add employee",
                 "View all departments",
                 "View all roles",
@@ -90,7 +147,7 @@ init = () => {
             ]
         }
     ]).then(answers => {
-        const {intention} = answers;
+        const { intention } = answers;
         switch (intention) {
             case 'Add department':
                 return addDepartment();
