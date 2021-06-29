@@ -134,49 +134,74 @@ addEmployee = () => {
 viewDepartments = () => {
     connection.query("SELECT * FROM department", (err, res) => {
         let display = [];
-        for (i in res) {
+        if (res[0] === undefined) {
+            console.log("-----------------------------------");
+            console.log("| No departments in the database! |");
+            console.log("-----------------------------------");
+            init();
+        }
+        for (let i in res) {
             let object = {
                 Id: res[i].id,
                 Name: res[i].department_name
             }
             display.push(object);
+            if (Number(i) >= res.length - 1) {
+                console.table(display);
+                init();
+            }
         }
-        console.table(display);
-        init();
+        
     })
 }
 
 viewRoles = () => {
-    connection.query("SELECT * FROM employee_role", (err, res) => {
+    connection.query("SELECT * FROM employee_role", (err, resp) => {
         let display = [];
-        for (i in res) {
-            let object = {
-                Id: res[i].id,
-                Title: res[i].title,
-                Salary: res[i].salary
-            }
-            connection.query("SELECT * FROM department WHERE id = ?", [res[i].department_id], (err, res) => {
-                object["Department Id"] = res[0].department_id
-                display.push(object);
-                console.table(display);
+        if (resp[0] === undefined) {
+            console.log("---------------------------------");
+            console.log("|   No roles in the database!   |");
+            console.log("---------------------------------");
             init();
+        }
+        for (let i in resp) {
+            let object = {
+                Id: resp[i].id,
+                Title: resp[i].title,
+                Salary: resp[i].salary
+            }
+            connection.query("SELECT * FROM department WHERE id = ?", [resp[i].department_id], (err, res) => {
+                object["Department Name"] = res[0].department_name
+                display.push(object);
+                if (Number(i) >= resp.length - 1) {
+                    console.table(display);
+                    init();
+                }
+                
             })
         }
     })
 }
 
 viewEmployees = () => {
-    connection.query("SELECT * FROM employee", (err, res) => {
+    connection.query("SELECT * FROM employee", (err, resp) => {
         let display = [];
-        for (i in res) {
-            let first_name = res[i].first_name
-            let last_name = res[i].last_name
+        if (resp[0] === undefined) {
+            console.log("---------------------------------");
+            console.log("| No employees in the database! |");
+            console.log("---------------------------------");
+            init();
+        }
+        for (let i in resp) {
+            let id = resp[i].id;
+            let first_name = resp[i].first_name;
+            let last_name = resp[i].last_name;
             let title;
             let department;
-            let salary
+            let salary;
             let manager_name;
-            let hasManager = res[i].manager_id;
-            connection.query("SELECT * FROM employee_role WHERE id = ?", [res[i].role_id], (err, res) => {
+            let hasManager = resp[i].manager_id;
+            connection.query("SELECT * FROM employee_role WHERE id = ?", [resp[i].role_id], (err, res) => {
                 if (err) throw err;
                 title = res[0].title;
                 salary = res[0].salary;
@@ -186,7 +211,7 @@ viewEmployees = () => {
                     if (hasManager === null) {
                         manager_name = "None";
                         let object = {
-                            Id: res[i].id,
+                            Id: id,
                             "First Name": first_name,
                             "Last Name": last_name,
                             Title: title,
@@ -195,32 +220,36 @@ viewEmployees = () => {
                             Manager: manager_name
                         }
                         display.push(object);
-                        console.log(display)
-                        console.table(display);
-                        init();
+                        if (Number(i) >= resp.length - 1) {
+                            console.table(display);
+                            init();
+                        }
                     } else {
                         connection.query("SELECT * FROM employee WHERE id = ?", [hasManager], (err, res) => {
                             if (err) throw err;
-                            console.log(res);
                             manager_name = res[0].first_name + " " + res[0].last_name
                             let object = {
-                                Id: res[i].id,
-                                "First Name": res[i].first_name,
-                                "Last Name": res[i].last_name,
+                                Id: id,
+                                "First Name": first_name,
+                                "Last Name": last_name,
                                 Title: title,
                                 Department: department,
                                 Salary: salary,
                                 Manager: manager_name
                             }
                             display.push(object);
-                            console.table(display);
-                            init();
+                            if (Number(i) >= resp.length - 1) {
+                                console.table(display);
+                                init();
+                            }
                         })
                     }
                 })
             })
         }
+        
     })
+    
 }
 
 init = () => {
