@@ -25,4 +25,3 @@ CREATE TABLE department (
 	department_name VARCHAR(30),
     PRIMARY KEY(id)
 );
-

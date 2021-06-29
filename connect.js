@@ -107,7 +107,8 @@ addEmployee = () => {
                 let managerName = manager_name.split(" ");
                 connection.query("SELECT id FROM employee WHERE first_name = ? AND last_name = ?", [managerName[0], managerName[1]], (err, res) => {
                     let manager_id;
-                    if (managerName === "None") {
+                    console.log(res)
+                    if (res[0] === undefined) {
                         manager_id = null;
                     } else {
                         manager_id = res[0].id;
