@@ -130,6 +130,21 @@ addEmployee = () => {
     })
 }
 
+viewDepartments = () => {
+    connection.query("SELECT * FROM department", (err, res) => {
+        let display = [];
+        for (i in res) {
+            let object = {
+                Id: res[i].id,
+                Name: res[i].department_name
+            }
+            display.push(object);
+        }
+        console.table(display);
+        init();
+    })
+}
+
 init = () => {
     inquirer.prompt([
         {
