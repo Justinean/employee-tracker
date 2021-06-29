@@ -18,6 +18,61 @@ const connection = mysql.createConnection({
     database: 'employee_db',
 });
 
+addDepartment = () => {
+    inquirer.prompt([
+        {
+            name: "department_name",
+            message: "What is the department's name?",
+            type: "input"
+        }
+    ]).then(answers => {
+        const {department_name} = answers;
+        connection.query("INSERT INTO department (department_name) VALUES (?)", [department_name], (err) => {
+            if (err) throw err;
+            console.log('Department added successfully');
+            init();
+        })
+    })
+}
+
+addRole = () => {
+    connection.query("SELECT * FROM department", (err, res) => {
+        const choices = res.map(result => result.department_name);
+        inquirer.prompt([
+            {
+                name: "title",
+                message: "What is the title of the role?",
+                type: "input"
+            },
+            {
+                name: "salary",
+                message: "What is the salary of the role?",
+                type: "number"
+            },
+            {
+                name: "department_name",
+                message: "What department does this role fall into?",
+                type: "list",
+                choices
+            }
+        ]).then(answers => {
+            const {title, salary, department_name} = answers;
+            connection.query("SELECT id FROM department WHERE department_name = ?", [department_name], (err, res) => {
+                const department_id = res[0].id;
+                connection.query("INSERT INTO employee_role SET ?", [{
+                    title,
+                    salary,
+                    department_id
+                }], err => {
+                    if (err) throw err;
+                    console.log("Role added successfully!");
+                    init();
+                })
+            })
+        })
+    })
+}
+
 init = () => {
     inquirer.prompt([
         {
