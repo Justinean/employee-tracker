@@ -310,6 +310,41 @@ updateEmployeeRole = () => {
     })
 }
 
+updateEmployeeManager = () => {
+    connection.query("SELECT first_name, last_name FROM employee", (err, res) => {
+        const choices = res.map(result => result.first_name + " " + result.last_name);
+        inquirer.prompt([
+            {
+                name: "person",
+                message: "Who's manager do you want to change?",
+                type: "list",
+                choices
+            }
+        ]).then(answer => {
+            let firstLast = answer.person.split(" ")
+            connection.query("SELECT first_name, last_name FROM employee WHERE NOT ? AND NOT ?", [{first_name: firstLast[0]}, {last_name: firstLast[1]}], (err, res) => {
+                const choices = res.map(result => result.first_name + " " + result.last_name);
+                inquirer.prompt([
+                    {
+                        name: "manager",
+                        message: `Who do you want to manage ${answer.person}?`,
+                        type: "list",
+                        choices
+                    }
+                ]).then(answers => {
+                    let firstLastMan = answers.manager.split(" ")
+                    connection.query("SELECT id FROM employee WHERE ? AND ?", [{first_name: firstLastMan[0]}, {last_name: firstLastMan[1]}], (err, res) => {
+                        connection.query("UPDATE employee SET ? WHERE ? AND ?", [{manager_id: res[0].id}, {first_name: firstLast[0]}, {last_name: firstLast[1]}], (err) => {
+                            console.log(`${answer.person}'s manager updated to ${answers.manager}`);
+                            init();
+                        })
+                    })
+                })
+            })
+        })
+    })
+}
+
 deleteEmployee = () => {
     connection.query("SELECT first_name, last_name FROM employee", (err, res) => {
         const choices = res.map(result => result.first_name + " " + result.last_name);
@@ -367,6 +402,7 @@ init = () => {
                 "View all roles",
                 "View all employees",
                 "Update employee role",
+                "Update employee manager",
                 "Delete employee",
                 "Delete role",
                 "Exit"
@@ -389,6 +425,8 @@ init = () => {
                 return viewEmployees();
             case "Update employee role":
                 return updateEmployeeRole();
+            case "Update employee manager":
+                return updateEmployeeManager();
             case "Delete employee":
                 return deleteEmployee();
             case "Delete role":
