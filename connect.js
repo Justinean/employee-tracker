@@ -299,6 +299,26 @@ updateEmployeeRole = () => {
     })
 }
 
+deleteEmployee = () => {
+    connection.query("SELECT first_name, last_name FROM employee", (err, res) => {
+        const choices = res.map(result => result.first_name + " " + result.last_name);
+        inquirer.prompt([
+            {
+                name: "person",
+                message: "Who do you want to delete?",
+                type: "list",
+                choices
+            }
+        ]).then(answer => {
+            let firstLast = answer.person.split(" ");
+            connection.query("DELETE FROM employee WHERE ? AND ?", [{first_name: firstLast[0]}, {last_name: firstLast[1]}], (err, res) => {
+                console.log("Employee deleted!");
+                init();
+            })
+        })
+    })
+}
+
 init = () => {
     inquirer.prompt([
         {
