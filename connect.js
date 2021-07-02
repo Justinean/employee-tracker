@@ -11,7 +11,7 @@ const connection = mysql.createConnection({
     port: 3306,
 
     // Your username
-    user: 'root',
+    user: process.env.USER,
 
     // Be sure to update with your own MySQL password!
     password: process.env.PASSWORD,
@@ -166,7 +166,6 @@ viewDepartments = () => {
                 init();
             }
         }
-        
     })
 }
 
@@ -262,9 +261,42 @@ viewEmployees = () => {
                 })
             })
         }
-        
     })
-    
+}
+
+updateEmployeeRole = () => {
+    connection.query("SELECT first_name, last_name FROM employee", (err, res) => {
+        const choices = res.map(result => result.first_name + " " + result.last_name);
+        inquirer.prompt([
+            {
+                name: "person",
+                message: "Who's role do you want to change?",
+                type: "list",
+                choices
+            }
+        ]).then(answer => {
+            connection.query("SELECT title FROM employee_role", (err, res) => {
+                const choices = res.map(result => result.title);
+                inquirer.prompt([
+                    {
+                        name: "role",
+                        message: `What role do you want ${answer.person} to have?`,
+                        type: "list",
+                        choices
+                    }
+                ]).then(answers => {
+                    connection.query("SELECT id FROM employee_role WHERE ?", {title: answers.role}, (err, response) => {
+                        let firstSecond = answer.person.split(" ");
+                        connection.query("UPDATE employee SET ? WHERE ? AND ?", [{role_id: response[0].id}, {first_name: firstSecond[0]}, {last_name: firstSecond[1]}], (err, res) => {
+                            console.log(`${answer.name}'s role id has been updated to ${response[0].id}`);
+                            init();
+                        })
+                    })
+                    
+                })
+            })
+        })
+    })
 }
 
 init = () => {
@@ -280,6 +312,8 @@ init = () => {
                 "View all departments",
                 "View all roles",
                 "View all employees",
+                "Update employee role",
+                "Delete employee",
                 "Exit"
             ]
         }
@@ -298,6 +332,10 @@ init = () => {
                 return viewRoles();
             case "View all employees":
                 return viewEmployees();
+            case "Update employee role":
+                return updateEmployeeRole();
+            case "Delete employee":
+                return deleteEmployee();
             case "Exit":
             default:
                 connection.end();
