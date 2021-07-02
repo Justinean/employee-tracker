@@ -217,11 +217,22 @@ viewEmployees = () => {
             let hasManager = resp[i].manager_id;
             connection.query("SELECT * FROM employee_role WHERE id = ?", [resp[i].role_id], (err, res) => {
                 if (err) throw err;
-                title = res[0].title;
-                salary = res[0].salary;
+                if (res.length > 0){
+                    title = res[0].title;
+                    salary = res[0].salary;
+                } else {
+                    title = "None";
+                    salary = "None";
+                    res[0] = {};
+                    res[0].department_id = null;
+                }
                 connection.query("SELECT * FROM department WHERE id = ?", [res[0].department_id], (err, res) => {
                     if (err) throw err;
-                    department = res[0].department_name
+                    if (res.length > 0){
+                        department = res[0].department_name;
+                    } else {
+                        department = "None";
+                    }
                     if (hasManager === null) {
                         manager_name = "None";
                         let object = {
@@ -285,10 +296,10 @@ updateEmployeeRole = () => {
                         choices
                     }
                 ]).then(answers => {
-                    connection.query("SELECT id FROM employee_role WHERE ?", {title: answers.role}, (err, response) => {
+                    connection.query("SELECT id, title FROM employee_role WHERE ?", {title: answers.role}, (err, response) => {
                         let firstSecond = answer.person.split(" ");
                         connection.query("UPDATE employee SET ? WHERE ? AND ?", [{role_id: response[0].id}, {first_name: firstSecond[0]}, {last_name: firstSecond[1]}], (err, res) => {
-                            console.log(`${answer.name}'s role id has been updated to ${response[0].id}`);
+                            console.log(`${answer.person}'s role has been updated to ${response[0].title}!`);
                             init();
                         })
                     })
@@ -319,6 +330,29 @@ deleteEmployee = () => {
     })
 }
 
+deleteRole = () => {
+    connection.query("SELECT title FROM employee_role", (err, res) => {
+        const choices = res.map(result => result.title);
+        inquirer.prompt([
+            {
+                name: "role",
+                message: "What role do you want to delete?",
+                type: "list",
+                choices
+            }
+        ]).then(answer => {
+            connection.query("SELECT id FROM employee_role WHERE ?", {title: answer.role}, (err, response) => {
+                connection.query("DELETE FROM employee_role WHERE ?", [{title: answer.role}], (err) => {
+                    connection.query("UPDATE employee SET ? WHERE ?", [{role_id: null}, {role_id: response[0].id}], (err, res) => {
+                        console.log("Role deleted!");
+                        init();
+                    })
+                })
+            })
+        })
+    })
+}
+
 init = () => {
     inquirer.prompt([
         {
@@ -334,6 +368,7 @@ init = () => {
                 "View all employees",
                 "Update employee role",
                 "Delete employee",
+                "Delete role",
                 "Exit"
             ]
         }
@@ -356,6 +391,8 @@ init = () => {
                 return updateEmployeeRole();
             case "Delete employee":
                 return deleteEmployee();
+            case "Delete role":
+                return deleteRole();
             case "Exit":
             default:
                 connection.end();
