@@ -185,7 +185,11 @@ viewRoles = () => {
                 Salary: resp[i].salary
             }
             connection.query("SELECT * FROM department WHERE id = ?", [resp[i].department_id], (err, res) => {
-                object["Department Name"] = res[0].department_name
+                if (res.length > 0) {
+                    object["Department Name"] = res[0].department_name
+                } else {
+                    object["Department Name"] = "None"
+                }
                 display.push(object);
                 if (Number(i) >= resp.length - 1) {
                     console.table(display);
@@ -233,8 +237,13 @@ viewEmployees = () => {
                     } else {
                         department = "None";
                     }
-                    if (hasManager === null) {
-                        manager_name = "None";
+                    connection.query("SELECT * FROM employee WHERE id = ?", [hasManager], (err, res) => {
+                        if (err) throw err;
+                        if (hasManager !== null) {
+                            manager_name = res[0].first_name + " " + res[0].last_name;
+                        } else {
+                            manager_name = "None";
+                        }
                         let object = {
                             Id: id,
                             "First Name": first_name,
@@ -249,26 +258,7 @@ viewEmployees = () => {
                             console.table(display);
                             init();
                         }
-                    } else {
-                        connection.query("SELECT * FROM employee WHERE id = ?", [hasManager], (err, res) => {
-                            if (err) throw err;
-                            manager_name = res[0].first_name + " " + res[0].last_name
-                            let object = {
-                                Id: id,
-                                "First Name": first_name,
-                                "Last Name": last_name,
-                                Title: title,
-                                Department: department,
-                                Salary: salary,
-                                Manager: manager_name
-                            }
-                            display.push(object);
-                            if (Number(i) >= resp.length - 1) {
-                                console.table(display);
-                                init();
-                            }
-                        })
-                    }
+                    })
                 })
             })
         }
@@ -388,6 +378,29 @@ deleteRole = () => {
     })
 }
 
+deleteDepartment = () => {
+    connection.query("SELECT department_name FROM department", (err, res) => {
+        const choices = res.map(result => result.department_name)
+        inquirer.prompt([
+            {
+                name: "name",
+                message: "Which department do you want to delete?",
+                type: "list",
+                choices
+            }
+        ]).then(answer => {
+            connection.query("SELECT id FROM department WHERE ?", {department_name: answer.name}, (err, response) => {
+                connection.query("DELETE FROM department WHERE ?", [{department_name: answer.name}], (err) => {
+                    connection.query("UPDATE employee_role SET ? WHERE ?", [{department_id: null}, {department_id: response[0].id}], (err, res) => {
+                        console.log("Role deleted!");
+                        init();
+                    })
+                })
+            })
+        })
+    })
+}
+
 init = () => {
     inquirer.prompt([
         {
@@ -405,6 +418,7 @@ init = () => {
                 "Update employee manager",
                 "Delete employee",
                 "Delete role",
+                "Delete department",
                 "Exit"
             ]
         }
@@ -431,6 +445,8 @@ init = () => {
                 return deleteEmployee();
             case "Delete role":
                 return deleteRole();
+            case "Delete department":
+                return deleteDepartment();
             case "Exit":
             default:
                 connection.end();
