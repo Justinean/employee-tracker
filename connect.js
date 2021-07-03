@@ -265,6 +265,86 @@ viewEmployees = () => {
     })
 }
 
+viewByManager = () => {
+    connection.query("SELECT first_name, last_name FROM employee", (err, res) => {
+        const choices = res.map(result => result.first_name + " " + result.last_name);
+        inquirer.prompt([
+            {
+                name: "manager",
+                message: "Which manager do you want to see the employees of?",
+                type: "list",
+                choices
+            }
+        ]).then(answer => {
+                let firstLast = answer.manager.split(" ")
+                connection.query("SELECT id FROM employee WHERE ? AND ?", [{first_name: firstLast[0]}, {last_name: firstLast[1]}], (err, res) => {
+                    connection.query("SELECT * FROM employee WHERE ?", {manager_id: res[0].id}, (err, resp) => {
+                        if (resp.length <= 0) {
+                            console.log("-----------------------------------");
+                            console.log("| No employees with this manager! |");
+                            console.log("-----------------------------------");
+                            return init();
+                        }
+                        let display = [];
+                        for (let i in resp) {
+                            let id = resp[i].id;
+                            let first_name = resp[i].first_name;
+                            let last_name = resp[i].last_name;
+                            let title;
+                            let department;
+                            let salary;
+                            let manager_name;
+                            let hasManager = resp[i].manager_id;
+                            connection.query("SELECT * FROM employee_role WHERE id = ?", [resp[i].role_id], (err, res) => {
+                                if (err) throw err;
+                                if (res.length > 0){
+                                    title = res[0].title;
+                                    salary = res[0].salary;
+                                } else {
+                                    title = "None";
+                                    salary = "None";
+                                    res[0] = {};
+                                    res[0].department_id = null;
+                                }
+                                connection.query("SELECT * FROM department WHERE id = ?", [res[0].department_id], (err, res) => {
+                                    if (err) throw err;
+                                    if (res.length > 0){
+                                        department = res[0].department_name;
+                                    } else {
+                                        department = "None";
+                                    }
+                                    connection.query("SELECT * FROM employee WHERE id = ?", [hasManager], (err, res) => {
+                                        if (err) throw err;
+                                        if (hasManager !== null) {
+                                            manager_name = res[0].first_name + " " + res[0].last_name;
+                                        } else {
+                                            manager_name = "None";
+                                        }
+                                        let object = {
+                                            Id: id,
+                                            "First Name": first_name,
+                                            "Last Name": last_name,
+                                            Title: title,
+                                            Department: department,
+                                            Salary: salary,
+                                            Manager: manager_name
+                                        }
+                                        display.push(object);
+                                        if (Number(i) >= resp.length - 1) {
+                                            console.table(display);
+                                            init();
+                                        }
+                                    })
+                                })
+                            })
+                        }
+                    })
+                })
+            }
+        )
+    })
+}
+
 updateEmployeeRole = () => {
     connection.query("SELECT first_name, last_name FROM employee", (err, res) => {
         const choices = res.map(result => result.first_name + " " + result.last_name);
@@ -415,6 +495,7 @@ init = () => {
                 "View all departments",
                 "View all roles",
                 "View all employees",
+                "View all employees of a certain manager",
                 "Update employee role",
                 "Update employee manager",
                 "Delete employee",
@@ -438,6 +519,8 @@ init = () => {
                 return viewRoles();
             case "View all employees":
                 return viewEmployees();
+            case "View all employees of a certain manager":
+                return viewByManager();
             case "Update employee role":
                 return updateEmployeeRole();
             case "Update employee manager":
