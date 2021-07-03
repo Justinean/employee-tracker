@@ -391,8 +391,9 @@ deleteDepartment = () => {
         ]).then(answer => {
             connection.query("SELECT id FROM department WHERE ?", {department_name: answer.name}, (err, response) => {
                 connection.query("DELETE FROM department WHERE ?", [{department_name: answer.name}], (err) => {
-                    connection.query("UPDATE employee_role SET ? WHERE ?", [{department_id: null}, {department_id: response[0].id}], (err, res) => {
-                        console.log("Role deleted!");
+                    connection.query("DELETE FROM employee_role WHERE ?", [{department_id: response[0].id}], (err, res) => {
+                        console.log(res)
+                        console.log("Department deleted!");
                         init();
                     })
                 })
