@@ -25,3 +25,19 @@ CREATE TABLE department (
 	department_name VARCHAR(30),
     PRIMARY KEY(id)
 );
+
+
+
+INSERT INTO department (department_name)
+	VALUES ("Hardware"),
+    ("Grocery");
+    
+INSERT INTO employee_role (title, salary, department_id)
+	VALUES ("Pickup", 15000, 2),
+    ("Cashier", 10000, 2),
+    ("Stocking", 15000, 1);
+    
+INSERT INTO employee (first_name, last_name, role_id, manager_id)
+	VALUES ("Justin", "Hoch", 1, null),
+    ("Jon", "Hoc", 2, 1),
+    ("Josh", "Hallow", 3, null);
