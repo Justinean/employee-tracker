@@ -115,7 +115,7 @@ addEmployee = () => {
                     let managerName = manager_name.split(" ");
                     connection.query("SELECT id FROM employee WHERE first_name = ? AND last_name = ?", [managerName[0], managerName[1]], (err, res) => {
                         let manager_id;
-                        console.log(res)
+
                         if (res.length <= 0) {
                             manager_id = null;
                         } else {
@@ -472,7 +472,6 @@ deleteDepartment = () => {
             connection.query("SELECT id FROM department WHERE ?", {department_name: answer.name}, (err, response) => {
                 connection.query("DELETE FROM department WHERE ?", [{department_name: answer.name}], (err) => {
                     connection.query("DELETE FROM employee_role WHERE ?", [{department_id: response[0].id}], (err, res) => {
-                        console.log(res)
                         console.log("Department deleted!");
                         init();
                     })
